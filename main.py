@@ -18,7 +18,40 @@ def get_connection():
     )
 
 
-# TODO: Run migrations before querying
+def run_migrations():
+    conn = None
+    try:
+        # First connect without database to create it if needed
+        conn = mysql.connector.connect(
+            host=HOST, port=PORT, user=USER, password=PASSWORD
+        )
+        cur = conn.cursor()
+        
+        # Read and execute init.sql
+        with open('migrations/init.sql', 'r') as f:
+            # Split by semicolon to execute multiple statements
+            statements = f.read().split(';')
+            for statement in statements:
+                if statement.strip():
+                    cur.execute(statement)
+        conn.commit()
+        
+        # Read and execute insert.sql
+        with open('migrations/insert.sql', 'r') as f:
+            # Split by semicolon to execute multiple statements
+            statements = f.read().split(';')
+            for statement in statements:
+                if statement.strip():
+                    cur.execute(statement)
+        conn.commit()
+        print("Migrations completed successfully")
+    except Error as e:
+        print("Error running migrations:", e)
+        if conn:
+            conn.rollback()
+    finally:
+        if conn:
+            conn.close()
 
 
 # defining a function that will get all the attributes from the Course table
@@ -68,6 +101,9 @@ def get_tutor_lessons(tutor_id):
 # defining a main function that will call all our other functions to deliver a connection as well as SQL queries
 def main():
     print(f"\nConnecting to {USER}@{HOST}:{PORT} - DB: {DATABASE}\n")
+    
+    # Run migrations first
+    run_migrations()
 
     # Fetch and print courses
     courses = fetch_courses()
