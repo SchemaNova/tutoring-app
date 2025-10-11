@@ -100,67 +100,67 @@ def run_all_queries():
     queries = [
         # Query 1
         ("All Registered Students",
-         "SELECT student_id, first_name, last_name, email FROM STUDENT;"),
+         "SELECT student_id, first_name, last_name, email FROM student;"),
         # Query 2
         ("Available Courses",
-         "SELECT course_id, course_name, difficulty_level FROM COURSE ORDER BY difficulty_level;"),
+         "SELECT course_id, course_name, difficulty_level FROM course ORDER BY difficulty_level;"),
         # Query 3
         ("Lessons for Tutor T001",
-         "SELECT lesson_id, lesson_date, duration_minutes, course_id FROM LESSON WHERE tutor_id = 'T001' ORDER BY lesson_date;"),
+         "SELECT lesson_id, lesson_date, duration_minutes, course_id FROM lesson WHERE tutor_id = 'T001' ORDER BY lesson_date;"),
         # Query 4
         ("Payments and Lesson Details",
          """SELECT P.payment_id, P.amount, P.status, S.first_name AS Student,
                    T.first_name AS Tutor, L.lesson_date
-            FROM PAYMENT P
-            JOIN LESSON L ON P.lesson_id = L.lesson_id
-            JOIN STUDENT S ON L.student_id = S.student_id
-            JOIN TUTOR T ON L.tutor_id = T.tutor_id
+            FROM payment P
+            JOIN lesson L ON P.lesson_id = L.lesson_id
+            JOIN student S ON L.student_id = S.student_id
+            JOIN tutor T ON L.tutor_id = T.tutor_id
             ORDER BY P.payment_date DESC;"""),
         # Query 5
         ("All Reviews",
          """SELECT R.review_id, S.first_name AS Student, T.first_name AS Tutor,
                    R.rating, R.comment, R.review_date
-            FROM REVIEW R
-            JOIN LESSON L ON R.lesson_id = L.lesson_id
-            JOIN STUDENT S ON L.student_id = S.student_id
-            JOIN TUTOR T ON L.tutor_id = T.tutor_id
+            FROM review R
+            JOIN lesson L ON R.lesson_id = L.lesson_id
+            JOIN student S ON L.student_id = S.student_id
+            JOIN tutor T ON L.tutor_id = T.tutor_id
             ORDER BY R.review_date DESC;"""),
         # Query 6
         ("Lessons Per Tutor",
          """SELECT T.tutor_id, T.first_name, T.last_name, COUNT(L.lesson_id) AS total_lessons
-            FROM TUTOR T
-            LEFT JOIN LESSON L ON T.tutor_id = L.tutor_id
+            FROM tutor T
+            LEFT JOIN lesson L ON T.tutor_id = L.tutor_id
             GROUP BY T.tutor_id, T.first_name, T.last_name
             ORDER BY total_lessons DESC;"""),
         # Query 7
         ("Average Payment per Course",
          """SELECT C.course_name, AVG(P.amount) AS average_payment
-            FROM COURSE C
-            JOIN LESSON L ON C.course_id = L.course_id
-            JOIN PAYMENT P ON L.lesson_id = P.lesson_id
+            FROM course C
+            JOIN lesson L ON C.course_id = L.course_id
+            JOIN payment P ON L.lesson_id = P.lesson_id
             GROUP BY C.course_name
             ORDER BY average_payment DESC;"""),
         # Query 8
         ("Tutors with Rating > 4.0",
          """SELECT T.tutor_id, T.first_name, T.last_name, AVG(R.rating) AS avg_rating
-            FROM TUTOR T
-            JOIN LESSON L ON T.tutor_id = L.tutor_id
-            JOIN REVIEW R ON L.lesson_id = R.lesson_id
+            FROM tutor T
+            JOIN lesson L ON T.tutor_id = L.tutor_id
+            JOIN review R ON L.lesson_id = R.lesson_id
             GROUP BY T.tutor_id, T.first_name, T.last_name
             HAVING avg_rating > 4.0;"""),
         # Query 9
         ("Students Taking Multiple Courses",
          """SELECT S.student_id, S.first_name, S.last_name, COUNT(DISTINCT L.course_id) AS course_count
-            FROM STUDENT S
-            JOIN LESSON L ON S.student_id = L.student_id
+            FROM student S
+            JOIN lesson L ON S.student_id = L.student_id
             GROUP BY S.student_id, S.first_name, S.last_name
             HAVING course_count > 1;"""),
         # Query 10
         ("Total Revenue per Tutor",
          """SELECT T.tutor_id, T.first_name, T.last_name, SUM(P.amount) AS total_revenue
-            FROM TUTOR T
-            JOIN LESSON L ON T.tutor_id = L.tutor_id
-            JOIN PAYMENT P ON L.lesson_id = P.lesson_id
+            FROM tutor T
+            JOIN lesson L ON T.tutor_id = L.tutor_id
+            JOIN payment P ON L.lesson_id = P.lesson_id
             GROUP BY T.tutor_id, T.first_name, T.last_name
             ORDER BY total_revenue DESC;""")
     ]
