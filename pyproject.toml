@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "cryptography>=46.0.2",
+    "dotenv>=0.9.9",
     "mysql-connector-python>=9.4.0",
 ]
 

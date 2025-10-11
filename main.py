@@ -2,14 +2,16 @@ import mysql.connector
 from mysql.connector import Error
 from datetime import datetime
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
-HOST = os.getenv("DB_HOST", "127.0.0.1")
-PORT = int(os.getenv("DB_PORT", 3306))
-USER = os.getenv("DB_USER", "root")
-PASSWORD = os.getenv("DB_PASS", "")
+HOST = os.getenv("DB_HOST")
+PORT = int(os.getenv("DB_PORT"))
+USER = os.getenv("DB_USER")
+PASSWORD = os.getenv("DB_PASS")
 DATABASE = os.getenv("DB_NAME", "tutoring_platform")
-
 
 # defining a function that will get all the required endpoints make a connection
 def get_connection():
