@@ -2,5 +2,5 @@ cryptography==46.0.2
 cffi==2.0.0
 pycparser==2.23
 mysql-connector-python==9.4.0
-ruff=0.13.3
+ruff==0.13.3
 uv
