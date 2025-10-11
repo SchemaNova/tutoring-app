@@ -5,6 +5,7 @@ services:
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: ${DB_PASS}
+      MYSQL_HOST: ${DB_HOST}
     ports:
       - "3306:3306"
     volumes:
