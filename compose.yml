@@ -4,7 +4,7 @@ services:
     container_name: mysql-db
     restart: unless-stopped
     environment:
-      DB_PASS: ${DB_PASS}
+      MYSQL_ROOT_PASSWORD: ${DB_PASS}
     ports:
       - "3306:3306"
     volumes:
