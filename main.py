@@ -1,19 +1,8 @@
-#!/usr/bin/env python3
-"""
-db_client.py
-Connects to MySQL using mysql-connector-python.
-Loads credentials from secrets.env using python-dotenv.
-"""
-
 import mysql.connector
 from mysql.connector import Error
 from datetime import datetime
-from dotenv import load_dotenv
 import os
 
-# Load your custom .env file
-dotenv_path = os.path.join(os.path.dirname(__file__), ".env")
-load_dotenv(dotenv_path)
 
 HOST = os.getenv("DB_HOST", "127.0.0.1")
 PORT = int(os.getenv("DB_PORT", 3306))
@@ -25,19 +14,20 @@ DATABASE = os.getenv("DB_NAME", "tutoring_platform")
 # defining a function that will get all the required endpoints make a connection
 def get_connection():
     return mysql.connector.connect(
-        host=HOST,
-        port=PORT,
-        user=USER,
-        password=PASSWORD,
-        database=DATABASE
+        host=HOST, port=PORT, user=USER, password=PASSWORD, database=DATABASE
     )
+
+
+# TODO: Run migrations before querying
 
 
 # defining a function that will get all the attributes from the Course table
 def fetch_courses():
     conn = None
     try:
-        conn = get_connection()  # setting up the connection by calling the get_connection defined above
+        conn = (
+            get_connection()
+        )  # setting up the connection by calling the get_connection defined above
         cur = conn.cursor(dictionary=True)
         cur.execute("SELECT * FROM COURSE;")
         return cur.fetchall()  # using fetchall to get all the information recieved by the SQL query and not fragments
@@ -84,7 +74,9 @@ def main():
     print("Courses:")
     if courses:
         for c in courses:
-            print(f" - {c['course_id']}: {c['course_name']} ({c.get('difficulty_level')})")
+            print(
+                f" - {c['course_id']}: {c['course_name']} ({c.get('difficulty_level')})"
+            )
     else:
         print(" No courses found.")
 
@@ -93,10 +85,13 @@ def main():
     lessons = get_tutor_lessons("T001")
     if lessons:
         for l in lessons:
-            dt = l['lesson_date']
-            dt_str = dt.strftime("%Y-%m-%d %H:%M") if isinstance(dt, datetime) else str(dt)
+            dt = l["lesson_date"]
+            dt_str = (
+                dt.strftime("%Y-%m-%d %H:%M") if isinstance(dt, datetime) else str(dt)
+            )
             print(
-                f" - {l['lesson_id']} on {dt_str} ({l['duration_minutes']} min) | {l['course_name']} - {l['student_first']} {l['student_last']}")
+                f" - {l['lesson_id']} on {dt_str} ({l['duration_minutes']} min) | {l['course_name']} - {l['student_first']} {l['student_last']}"
+            )
     else:
         print(" No lessons found for T001.")
 
