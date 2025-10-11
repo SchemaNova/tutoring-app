@@ -1,6 +1,7 @@
 import mysql.connector
 from mysql.connector import Error
 from datetime import datetime
+from decimal import Decimal
 import os
 from dotenv import load_dotenv
 
@@ -57,82 +58,136 @@ def run_migrations():
             conn.close()
 
 
-# defining a function that will get all the attributes from the Course table
-def fetch_courses():
-    conn = None
-    try:
-        conn = (
-            get_connection()
-        )  # setting up the connection by calling the get_connection defined above
-        cur = conn.cursor(dictionary=True)
-        cur.execute("SELECT * FROM course;")
-        return cur.fetchall()  # using fetchall to get all the information recieved by the SQL query and not fragments
-    except Error as e:  # error handling
-        print("Error fetching courses:", e)
-        return []
-    finally:
-        if conn:
-            conn.close()  # closing the connection afterwards
+def _format_value(col, val):
+    # Format common types: datetime and Decimal
+    if val is None:
+        return "NULL"
+    if isinstance(val, datetime):
+        return val.strftime("%Y-%m-%d %H:%M")
+    if isinstance(val, Decimal):
+        # Heuristics based on column name
+        name = col.lower()
+        if "avg" in name or "rating" in name:
+            return f"{val:.4f}"
+        if "amount" in name or "payment" in name or "revenue" in name or "total" in name:
+            return f"{val:.2f}"
+        return format(val, 'f')
+    return str(val)
 
 
-# defining a function that will get fetch all lessons for a specific tutor
-def get_tutor_lessons(tutor_id):
-    conn = None
-    sql = """
-    SELECT l.lesson_id, l.lesson_date, l.duration_minutes,
-           s.first_name AS student_first, s.last_name AS student_last,
-           c.course_name
-    FROM lesson l
-    JOIN student s ON l.student_id = s.student_id
-    JOIN course c ON l.course_id = c.course_id
-    WHERE l.tutor_id = %s
-    ORDER BY l.lesson_date;
-    """
-    try:
-        conn = get_connection()
-        cur = conn.cursor(dictionary=True)
-        cur.execute(sql, (tutor_id,))
-        return cur.fetchall()
-    except Error as e:  # error handling
-        print("Error fetching tutor lessons:", e)
-        return []
-    finally:
-        if conn:
-            conn.close()
+def _print_table(title, rows):
+    print(f"\n--- {title} ---")
+    if not rows:
+        print("No records found.")
+        return
+    # determine columns from first row (preserve order)
+    cols = list(rows[0].keys())
+    # compute column widths
+    col_widths = {c: max(len(c), *(len(_format_value(c, r.get(c))) for r in rows)) for c in cols}
+    # header
+    header = " | ".join(c.ljust(col_widths[c]) for c in cols)
+    sep = "-+-".join("-" * col_widths[c] for c in cols)
+    print(header)
+    print(sep)
+    # rows
+    for r in rows:
+        line = " | ".join(_format_value(c, r.get(c)).ljust(col_widths[c]) for c in cols)
+        print(line)
 
 
-# defining a main function that will call all our other functions to deliver a connection as well as SQL queries
+def run_all_queries():
+    """Executes all SQL queries from Section 6.0 and prints formatted results."""
+    queries = [
+        # Query 1
+        ("All Registered Students",
+         "SELECT student_id, first_name, last_name, email FROM STUDENT;"),
+        # Query 2
+        ("Available Courses",
+         "SELECT course_id, course_name, difficulty_level FROM COURSE ORDER BY difficulty_level;"),
+        # Query 3
+        ("Lessons for Tutor T001",
+         "SELECT lesson_id, lesson_date, duration_minutes, course_id FROM LESSON WHERE tutor_id = 'T001' ORDER BY lesson_date;"),
+        # Query 4
+        ("Payments and Lesson Details",
+         """SELECT P.payment_id, P.amount, P.status, S.first_name AS Student,
+                   T.first_name AS Tutor, L.lesson_date
+            FROM PAYMENT P
+            JOIN LESSON L ON P.lesson_id = L.lesson_id
+            JOIN STUDENT S ON L.student_id = S.student_id
+            JOIN TUTOR T ON L.tutor_id = T.tutor_id
+            ORDER BY P.payment_date DESC;"""),
+        # Query 5
+        ("All Reviews",
+         """SELECT R.review_id, S.first_name AS Student, T.first_name AS Tutor,
+                   R.rating, R.comment, R.review_date
+            FROM REVIEW R
+            JOIN LESSON L ON R.lesson_id = L.lesson_id
+            JOIN STUDENT S ON L.student_id = S.student_id
+            JOIN TUTOR T ON L.tutor_id = T.tutor_id
+            ORDER BY R.review_date DESC;"""),
+        # Query 6
+        ("Lessons Per Tutor",
+         """SELECT T.tutor_id, T.first_name, T.last_name, COUNT(L.lesson_id) AS total_lessons
+            FROM TUTOR T
+            LEFT JOIN LESSON L ON T.tutor_id = L.tutor_id
+            GROUP BY T.tutor_id, T.first_name, T.last_name
+            ORDER BY total_lessons DESC;"""),
+        # Query 7
+        ("Average Payment per Course",
+         """SELECT C.course_name, AVG(P.amount) AS average_payment
+            FROM COURSE C
+            JOIN LESSON L ON C.course_id = L.course_id
+            JOIN PAYMENT P ON L.lesson_id = P.lesson_id
+            GROUP BY C.course_name
+            ORDER BY average_payment DESC;"""),
+        # Query 8
+        ("Tutors with Rating > 4.0",
+         """SELECT T.tutor_id, T.first_name, T.last_name, AVG(R.rating) AS avg_rating
+            FROM TUTOR T
+            JOIN LESSON L ON T.tutor_id = L.tutor_id
+            JOIN REVIEW R ON L.lesson_id = R.lesson_id
+            GROUP BY T.tutor_id, T.first_name, T.last_name
+            HAVING avg_rating > 4.0;"""),
+        # Query 9
+        ("Students Taking Multiple Courses",
+         """SELECT S.student_id, S.first_name, S.last_name, COUNT(DISTINCT L.course_id) AS course_count
+            FROM STUDENT S
+            JOIN LESSON L ON S.student_id = L.student_id
+            GROUP BY S.student_id, S.first_name, S.last_name
+            HAVING course_count > 1;"""),
+        # Query 10
+        ("Total Revenue per Tutor",
+         """SELECT T.tutor_id, T.first_name, T.last_name, SUM(P.amount) AS total_revenue
+            FROM TUTOR T
+            JOIN LESSON L ON T.tutor_id = L.tutor_id
+            JOIN PAYMENT P ON L.lesson_id = P.lesson_id
+            GROUP BY T.tutor_id, T.first_name, T.last_name
+            ORDER BY total_revenue DESC;""")
+    ]
+
+    conn = get_connection()
+    cur = conn.cursor(dictionary=True)
+    print("\nExecuting SQL queries...\n")
+
+    for title, sql in queries:
+        cur.execute(sql)
+        rows = cur.fetchall()
+        _print_table(title, rows)
+
+    cur.close()
+    conn.close()
+    print("\nAll queries executed successfully.\n")
+
+
+#Main execution
 def main():
     print(f"\nConnecting to {USER}@{HOST}:{PORT} - DB: {DATABASE}\n")
 
-    # Run migrations first
+    # Step 1: Run migrations (create + insert)
     run_migrations()
 
-    # Fetch and print courses
-    courses = fetch_courses()
-    print("Courses:")
-    if courses:
-        for c in courses:
-            print(
-                f" - {c['course_id']}: {c['course_name']} ({c.get('difficulty_level')})"
-            )
-    else:
-        print(" No courses found.")
-
-    # Fetch and print lessons for tutor T001
-    print("\nLessons for tutor T001:")
-    lessons = get_tutor_lessons("T001")
-    if lessons:
-        for l in lessons:
-            dt = l["lesson_date"]
-            dt_str = (
-                dt.strftime("%Y-%m-%d %H:%M") if isinstance(dt, datetime) else str(dt)
-            )
-            print(
-                f" - {l['lesson_id']} on {dt_str} ({l['duration_minutes']} min) | {l['course_name']} - {l['student_first']} {l['student_last']}"
-            )
-    else:
-        print(" No lessons found for T001.")
+    # Step 2: Execute all SQL queries from section 6.0
+    run_all_queries()
 
 
 if __name__ == "__main__":
