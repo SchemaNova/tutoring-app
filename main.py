@@ -1,3 +1,11 @@
+##SchemaNova
+##4202375
+##4203232
+##4253243
+##4384756
+##4383832
+##main.py
+
 import mysql.connector
 from mysql.connector import Error
 from datetime import datetime
